@@ -29,6 +29,7 @@ import org.apache.seatunnel.api.table.catalog.CatalogTable;
 import org.apache.seatunnel.api.table.catalog.Column;
 import org.apache.seatunnel.api.table.catalog.PreviewResult;
 import org.apache.seatunnel.api.table.catalog.PrimaryKey;
+import org.apache.seatunnel.api.table.catalog.SQLPreviewResult;
 import org.apache.seatunnel.api.table.catalog.TableIdentifier;
 import org.apache.seatunnel.api.table.catalog.TablePath;
 import org.apache.seatunnel.api.table.catalog.TableSchema;
@@ -281,12 +282,12 @@ public class ClickhouseCatalog implements Catalog {
                 Long length = null;
                 switch (chType) {
                     case FixedString:
-                        case String:
-                            length = Long.parseLong(
-                                    columnType.substring(
-                                            columnType.indexOf("(") + 1,
-                                            columnType.indexOf(")"))
-                            );
+                    case String:
+                        length = Long.parseLong(
+                                columnType.substring(
+                                        columnType.indexOf("(") + 1,
+                                        columnType.indexOf(")"))
+                        );
                         break;
                     case Decimal:
                         precision = (long) numericPrecision;
@@ -390,7 +391,20 @@ public class ClickhouseCatalog implements Catalog {
 
     @Override
     public PreviewResult previewAction(ActionType actionType, TablePath tablePath, Optional<CatalogTable> catalogTable) {
-        // TODO: implement previewAction
-        return Catalog.super.previewAction(actionType, tablePath, catalogTable);
+        switch (actionType) {
+            case CREATE_DATABASE:
+                return new SQLPreviewResult(ClickhouseCatalogUtil.createDatabaseSQL(tablePath.getDatabaseName(), false));
+            case DROP_DATABASE:
+                return new SQLPreviewResult(ClickhouseCatalogUtil.dropDatabaseSQL(tablePath.getDatabaseName(), false));
+            case CREATE_TABLE:
+                // TODO: implement create table
+                return new SQLPreviewResult("CREATE TABLE ...");
+            case DROP_TABLE:
+                return new SQLPreviewResult(ClickhouseCatalogUtil.dropTableSQL(tablePath, false));
+            case TRUNCATE_TABLE:
+                return new SQLPreviewResult(ClickhouseCatalogUtil.truncateTableSQL(tablePath));
+            default:
+                throw new UnsupportedOperationException("Unsupported action type: " + actionType);
+        }
     }
 }
